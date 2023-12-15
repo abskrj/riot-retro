@@ -88,7 +88,7 @@ def index():
 @app.route("/login")
 def login():
     base_url = request.base_url
-    # base_url = base_url.replace("http://", "https://")
+    base_url = base_url.replace("http://", "https://")
 
     request_uri = client.prepare_request_uri(
         GOOGLE_AUTHORIZATION_ENDPOINT,
