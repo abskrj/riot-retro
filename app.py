@@ -88,7 +88,7 @@ def index():
 @app.route("/login")
 def login():
     base_url = request.base_url
-    base_url = base_url.replace("http://", "https://")
+    # base_url = base_url.replace("http://", "https://")
 
     request_uri = client.prepare_request_uri(
         GOOGLE_AUTHORIZATION_ENDPOINT,
@@ -131,7 +131,7 @@ def callback():
         return "User email not available or not verified by Google.", 400
     
     user = User(
-        id=unique_id, name=users_name, email=users_email, picture=picture
+        id=unique_id, name=users_name, email=users_email, picture=picture, days_to_go=0, city=None
     )
 
     if not User.get(unique_id):
