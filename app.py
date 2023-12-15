@@ -1,4 +1,5 @@
 import json
+import os
 
 from constants import GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_TOKEN_ENDPOINT, GOOGLE_AUTHORIZATION_ENDPOINT, GOOGLE_USERINFO_ENDPOINT
 from init_app import create_app
@@ -88,7 +89,10 @@ def index():
 @app.route("/login")
 def login():
     base_url = request.base_url
-    base_url = base_url.replace("http://", "https://")
+    if os.environ.get("FLASK_ENV") != "development":
+        base_url = base_url.replace("http://", "https://")
+
+    print(base_url)
 
     request_uri = client.prepare_request_uri(
         GOOGLE_AUTHORIZATION_ENDPOINT,
@@ -101,11 +105,21 @@ def login():
 @app.route("/login/callback")
 def callback():
     code = request.args.get("code")
+    base_url = request.base_url
+    url = request.url
+
+    if os.environ.get("FLASK_ENV") != "development":
+        base_url = base_url.replace("http://", "https://")
+        url = url.replace("http://", "https://")
+
+    
+
+    print(base_url, url)
 
     token_url, headers, body = client.prepare_token_request(
         GOOGLE_TOKEN_ENDPOINT,
-        authorization_response=request.url,
-        redirect_url=request.base_url,
+        authorization_response=url,
+        redirect_url=base_url,
         code=code
     )
     token_response = requests.post(
