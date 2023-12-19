@@ -52,6 +52,20 @@ def create_app():
                 'ReadCapacityUnits': 5,
                 'WriteCapacityUnits': 5
         }
+    }, {
+            'TableName': 'config',
+            'KeySchema': [{
+                'AttributeName': 'id',
+                'KeyType': 'HASH'
+            }],
+            'AttributeDefinitions': [{
+                'AttributeName': 'id',
+                'AttributeType': 'S'
+            }],
+            'ProvisionedThroughput': {
+                'ReadCapacityUnits': 5,
+                'WriteCapacityUnits': 5
+        }
     }]
     dynamo = Dynamo()
     dynamo.init_app(app)

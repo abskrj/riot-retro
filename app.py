@@ -13,9 +13,6 @@ from flask_login import (
 from oauthlib.oauth2 import WebApplicationClient
 import requests
 from flask import redirect, request, url_for, render_template
-contant_header = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36'
-}
 
 requests.packages.urllib3.util.connection.HAS_IPV6 = False
 
@@ -73,9 +70,29 @@ class User(UserMixin):
                 ":city": city
             }
         )
+
+    @staticmethod
+    def count():
+        return dynamo.tables["users"].scan()["Count"]
         
     def get_id(self):
         return self.id
+
+class Config:
+    @staticmethod
+    def get(key: str):
+        try:
+            _config = dynamo.tables["config"].get_item(Key={"id": key}).get("Item")
+            return _config.get("value")
+        except:
+            return None
+    
+    @staticmethod
+    def set(key: str, value: any):
+        dynamo.tables["config"].put_item(Item={
+            "id": key,
+            "value": value
+        })
 
 # Flask-Login helper to retrieve a user from our db
 @login_manager.user_loader
@@ -91,8 +108,6 @@ def login():
     base_url = request.base_url
     if os.environ.get("FLASK_ENV") != "development":
         base_url = base_url.replace("http://", "https://")
-
-    print(base_url)
 
     request_uri = client.prepare_request_uri(
         GOOGLE_AUTHORIZATION_ENDPOINT,
@@ -112,10 +127,6 @@ def callback():
         base_url = base_url.replace("http://", "https://")
         url = url.replace("http://", "https://")
 
-    
-
-    print(base_url, url)
-
     token_url, headers, body = client.prepare_token_request(
         GOOGLE_TOKEN_ENDPOINT,
         authorization_response=url,
@@ -124,12 +135,11 @@ def callback():
     )
     token_response = requests.post(
         token_url,
-        headers={**headers, **contant_header},
+        headers=headers,
         data=body,
         auth=(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET),
         timeout=2
     )
-
 
     client.parse_request_body_response(json.dumps(token_response.json()))
 
@@ -164,14 +174,17 @@ def schedule():
     if not current_user.is_authenticated:
         return redirect(url_for("index"))
     
+    count_offset = Config.get("count_offset") or 0
+    total_count = User.count() + count_offset
+    
     if request.method == "POST":
         days_to_go = request.form.get("days_to_go")
         city = request.form.get("city")
         User.update(current_user.id, days_to_go, city)
-        return render_template("schedule.html", user=current_user)
+        return render_template("schedule.html", user=current_user, count=total_count)
 
     if current_user.days_to_go and current_user.city:
-        return render_template("schedule.html", user=current_user)
+        return render_template("schedule.html", user=current_user, count=total_count)
 
     return redirect(url_for("index"))
 
